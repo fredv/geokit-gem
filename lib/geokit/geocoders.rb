@@ -4,6 +4,7 @@ require 'rexml/document'
 require 'yaml'
 require 'timeout'
 require 'logger'
+require 'uri'
 
 module Geokit
 
@@ -398,6 +399,7 @@ module Geokit
         #        res = Net::HTTP.get_response(URI.parse("http://maps.google.com/maps/geo?ll=#{Geokit::Inflector::url_escape(address_str)}&output=xml&key=#{Geokit::Geocoders::google}&oe=utf-8"))
         return GeoLoc.new unless (res.is_a?(Net::HTTPSuccess) || res.is_a?(Net::HTTPOK))
         xml = res.body
+        xml.force_encoding(Encoding::UTF_8) if xml.respond_to?(:force_encoding)
         logger.debug "Google reverse-geocoding. LL: #{latlng}. Result: #{xml}"
         return self.xml2GeoLoc(xml)        
       end  
@@ -430,9 +432,10 @@ module Geokit
       def self.do_geocode(address, options = {})
         bias_str = options[:bias] ? construct_bias_string_from_options(options[:bias]) : ''
         address_str = address.is_a?(GeoLoc) ? address.to_geocodeable_s : address
-        res = self.call_geocoder_service("http://maps.google.com/maps/geo?q=#{Geokit::Inflector::url_escape(address_str)}&output=xml#{bias_str}&key=#{Geokit::Geocoders::google}&oe=utf-8")
+        res = self.call_geocoder_service("http://maps.google.com/maps/geo?q=#{URI.escape(address_str)}&output=xml#{bias_str}&key=#{Geokit::Geocoders::google}&oe=utf-8")
         return GeoLoc.new if !res.is_a?(Net::HTTPSuccess)
         xml = res.body
+        xml.force_encoding(Encoding::UTF_8) if xml.respond_to?(:force_encoding)
         logger.debug "Google geocoding. Address: #{address}. Result: #{xml}"
         return self.xml2GeoLoc(xml, address)        
       end
